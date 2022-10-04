@@ -10,16 +10,9 @@
 #include <arpa/inet.h>
 
 #include "log.h"
+#include "handler.h"
 
 #define BACKLOG 10
-
-
-typedef struct httpreq httpreq;
-struct httpreq {
-  char* version;
-  char* method;
-  char* path;
-};
 
 static void* get_in_addr(struct sockaddr* sa) {
   if (sa->sa_family == AF_INET) {
@@ -28,7 +21,7 @@ static void* get_in_addr(struct sockaddr* sa) {
   return &(((struct sockaddr_in6*)sa)->sin6_addr);
 }
 
-void get_addr_str(struct sockaddr* sa, size_t len, char buf[static len]) {
+static void get_addr_str(struct sockaddr* sa, size_t len, char buf[static len]) {
   inet_ntop(sa->sa_family, get_in_addr(sa), buf, len);
 }
 
@@ -95,7 +88,7 @@ void server_main(char* addr, char* port) {
   int server_fd = get_server_fd(addr, port);
 
   if (server_fd == -1) {
-    ERROR("could not bind to address", 0);
+    ERROR("could not bind to address");
     return;
   }
 
@@ -106,11 +99,6 @@ void server_main(char* addr, char* port) {
     int client_fd = accept(server_fd, (struct sockaddr*)&client_sa, &client_sa_size);
 
     if (client_fd == -1) {
-      if (errno == EINTR) {
-        DEBUG("interrupted: %s", strerror(errno));
-        break;
-      }
-
       ERROR("client_fd: %s", strerror(errno));
       continue;
     }
@@ -121,14 +109,18 @@ void server_main(char* addr, char* port) {
     INFO("request from: %s", client_addr);
 #endif
 
+#ifdef SERVER_FORK
     if (!fork()) {
       // in child process
       close(server_fd);
-      // do stuff
+      handle_client_req(client_fd);
       close(client_fd);
       exit(0);
     }
-    
     close(client_fd);
+#else
+    handle_client_req(client_fd);
+    close(client_fd);
+#endif
   } 
 }
