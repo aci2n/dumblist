@@ -24,6 +24,8 @@ httpreq* httpreq_init(int fd) {
   httpreq* req = malloc(sizeof *req);
   httpheader** header = &req->header;
 
+  *req = (httpreq) { .fd = fd, };
+
   if (!req || !partbuf) {
     ERROR("malloc httpreq");
     goto error;
@@ -132,4 +134,21 @@ void httpreq_destroy(httpreq* req) {
   free(req->reqline.path);
   free(req->reqline.version);
   free(req);
+}
+
+int httpreq_send(httpreq* req, char* data) {
+  size_t n = strlen(data);
+
+  while (n > 0) {
+    size_t sent = send(req->fd, data, n, 0);
+
+    if (sent == -1) {
+      ERROR("send: %s", strerror(errno));
+      return errno;
+    }
+
+    n -= sent;
+  }
+
+  return 0;
 }

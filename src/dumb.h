@@ -12,6 +12,7 @@ struct dumbfile_entry {
 
 typedef struct dumbfile dumbfile;
 struct dumbfile {
+  char* title;
   dumbfile_entry* entry;
   dumbfile* next;
 };
