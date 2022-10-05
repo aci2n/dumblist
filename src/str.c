@@ -1,5 +1,8 @@
 #include <string.h>
 #include <ctype.h>
+#include <stdbool.h>
+
+#include "str.h"
 
 char* strtrim(char str[static 1]) {
   size_t len = strlen(str);
@@ -12,4 +15,9 @@ char* strtrim(char str[static 1]) {
   str[end] = 0;
 
   return str + start;
+}
+
+bool strendswith(char str[static 1], char suf[static 1]) {
+  str = strrchr(str, '.');
+  return str && strcmp(str, suf) == 0;
 }

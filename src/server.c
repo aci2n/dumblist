@@ -84,7 +84,7 @@ static int get_server_fd(char* addr, char* port) {
   return fd;
 }
 
-void server_main(char* addr, char* port) {
+void server_main(char* addr, char* port, char* datadir) {
   int server_fd = get_server_fd(addr, port);
 
   if (server_fd == -1) {
@@ -113,13 +113,13 @@ void server_main(char* addr, char* port) {
     if (!fork()) {
       // in child process
       close(server_fd);
-      handle_client_req(client_fd);
+      handle_client_req(client_fd, datadir);
       close(client_fd);
       exit(0);
     }
     close(client_fd);
 #else
-    handle_client_req(client_fd);
+    handle_client_req(client_fd, datadir);
     close(client_fd);
 #endif
   } 

@@ -8,12 +8,12 @@
 #include "log.h"
 #include "server.h"
 
-#define DEFAULT_DATA_DIR "/data"
+#define DEFAULT_DATA_DIR "./data"
 
 int main(int argc, char* argv[const static argc - 1]) {
   char* addr = 0;
-  char* port = 0;
-  char* datadir = 0;
+  char* port = "80";
+  char* datadir = DEFAULT_DATA_DIR;
   int opt = 0;
 
   while ((opt = getopt(argc, argv, "a:p:d:")) != -1) {
@@ -24,22 +24,14 @@ int main(int argc, char* argv[const static argc - 1]) {
       case 'p':
         port = optarg;
         break;
+      case 'd':
+        datadir = optarg;
+        break;
     }
   }
 
-  if (!port) {
-    port = "80";
-  }
-
-  if (!datadir) {
-    char cwd[PATH_MAX - strlen(DEFAULT_DATA_DIR)];
-    getcwd(cwd, sizeof cwd);
-    datadir = malloc(PATH_MAX);
-    snprintf(datadir, PATH_MAX, "%s%s", cwd, DEFAULT_DATA_DIR);
-  }
-
-  DEBUG("[addr: %s, port: %s]", addr, port);
-  server_main(addr, port);
+  DEBUG("[addr: %s, port: %s, datadir: %s]", addr, port, datadir);
+  server_main(addr, port, datadir);
   
   return EXIT_SUCCESS;
 }

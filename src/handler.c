@@ -12,9 +12,10 @@
 #include "handler.h"
 #include "http.h"
 #include "log.h"
+#include "dumb.h"
 
 /* we only support GETs :D */
-int handle_client_req(int fd) {
+int handle_client_req(int fd, char* datadir) {
   httpreq* req = httpreq_init(fd);
 
   if (!req) {
@@ -28,7 +29,14 @@ int handle_client_req(int fd) {
   }
 #endif
 
-  httpreq_destroy(req);
+  dumbfile* file = dumbfile_list(datadir);
 
+  if (!file) {
+    ERROR("no files found in datadir %s", datadir);
+    goto done;
+  }
+
+done:
+  httpreq_destroy(req);
   return 0;
 }

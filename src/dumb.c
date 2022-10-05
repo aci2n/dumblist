@@ -3,6 +3,9 @@
 #include <string.h>
 #include <unistd.h>
 #include <stdbool.h>
+#include <dirent.h>
+#include <errno.h>
+#include <sys/types.h>
 
 #include "dumb.h"
 #include "log.h"
@@ -26,12 +29,16 @@ dumbfile* dumbfile_init(char* path) {
     char* val = strtok(0, "\0");
 
     if (key && val) {
-      *entry = malloc(sizeof **entry);
-      *(*entry) = (dumbfile_entry) { 
+      dumbfile_entry* e = malloc(sizeof *e);
+
+      *e = (dumbfile_entry) { 
         .key = strdup(strtrim(key)),
         .val = strdup(strtrim(val)),
       };
-      entry = &(*entry)->next;
+      *entry = e;
+      entry = &e->next;
+
+      TRACE("dumbfile entry: [%s=%s]", e->key, e->val);
     } else {
       WARN("invalid line");
     }
@@ -53,4 +60,50 @@ void dumbfile_destroy(dumbfile* d) {
     entry = next;
   }
   free(d);
+}
+
+dumbfile* dumbfile_list(char* path) {
+  DIR* fd = 0;
+  dumbfile* list = 0;
+  dumbfile** next = &list;
+
+  fd = opendir(path);
+
+  if (!fd) {
+    ERROR("opendir: %s", strerror(errno));
+    goto done;
+  }
+
+  while (true) {
+    errno = 0;
+    struct dirent* de = readdir(fd);
+
+    if (!de) {
+      if (errno) {
+        ERROR("readdir: %s", strerror(errno));
+      } else{
+        TRACE("finished reading dir %s", path);
+      }
+      break;
+    }
+
+    TRACE("found file: %s", de->d_name);
+
+    if (strendswith(de->d_name, DUMBFILE_EXTENSION)) {
+      char fullpath[PATH_MAX];
+      dumbfile* f = 0;
+
+      snprintf(fullpath, sizeof fullpath, "%s/%s", path, de->d_name);
+      f = dumbfile_init(fullpath);
+
+      if (f) {
+        *next = f;
+        next = &f->next;
+      }
+    }
+  }
+
+done:
+  closedir(fd);
+  return list;
 }
