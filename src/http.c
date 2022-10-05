@@ -11,6 +11,7 @@
 
 #include "log.h"
 #include "http.h"
+#include "str.h"
 
 #define HTTPREQ_PARTMAXLEN 1 << 10
 
@@ -60,9 +61,9 @@ httpreq* httpreq_init(int fd) {
             goto error;
           }
 
-          req->reqline.method = strdup(method);
-          req->reqline.path = strdup(path);
-          req->reqline.version = strdup(version);
+          req->reqline.method = strdup(strtrim(method));
+          req->reqline.path = strdup(strtrim(path));
+          req->reqline.version = strdup(strtrim(version));
 
           reqline_done = true;
         } else {
@@ -74,8 +75,11 @@ httpreq* httpreq_init(int fd) {
             goto error;
           }
 
-          *header = malloc(sizeof *header);
-          *(*header) = (httpheader) { .key = strdup(key), .val = strdup(val), };
+          *header = malloc(sizeof **header);
+          *(*header) = (httpheader) {
+            .key = strdup(strtrim(key)),
+              .val = strdup(strtrim(val)),
+          };
           header = &(*header)->next;
         }
 
@@ -113,7 +117,10 @@ done:
 }
 
 
-void httpreq_destroy(httpreq req[static 1]) {
+void httpreq_destroy(httpreq* req) {
+  if (!req) {
+    return;
+  }
   for (httpheader* header = req->header; header;) {
     httpheader* next = header->next;
     free(header->key);

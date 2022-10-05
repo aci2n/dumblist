@@ -22,6 +22,6 @@ struct httpreq {
 };
 
 httpreq* httpreq_init(int fd);
-void httpreq_destroy(httpreq req[static 1]);
+void httpreq_destroy(httpreq* req);
 
 #endif
