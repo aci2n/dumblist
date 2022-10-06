@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Og -Wall
+CFLAGS += -g -Og -Wall
 OUT = out
 LOG_LEVEL = LEVEL_DEBUG
 
