@@ -15,7 +15,10 @@
 #include "dumb.h"
 #include "str.h"
 
-static void build_content(strbuf* sb, dumbfile* list) {
+#define HTTP_NEWLINE "\r\n"
+
+static strbuf* build_listing(dumbfile* list) {
+  strbuf* sb = strbuf_init(512);
   size_t count = 0;
 
   strbuf_add(sb, "<!DOCTYPE HTML><html><head></head><body><h1>Listing</h1><main>");
@@ -30,34 +33,57 @@ static void build_content(strbuf* sb, dumbfile* list) {
     strbuf_add(sb, "</dl></article>");
   }
   strbuf_add(sb, "</main></body></html>");
+
+  TRACE("listing len: %lu", strbuf_len(sb));
+
+  return sb;
 }
 
-#define HTTP_NEWLINE "\r\n"
+static strbuf* build_headers(unsigned sc, size_t content_len) {
+  strbuf* sb = strbuf_init(128);
 
-static void build_headers(strbuf* sb, size_t content_len) {
-  strbuf_add(sb, "HTTP/1.1 200 OK" HTTP_NEWLINE);
+  strbuf_printf(sb, "HTTP/1.1 %u" HTTP_NEWLINE, sc);
   strbuf_add(sb, "content-type: text/html; charset=us-acsii" HTTP_NEWLINE);
   strbuf_printf(sb, "content-length: %lu" HTTP_NEWLINE, content_len);
   strbuf_add(sb, HTTP_NEWLINE);
+
+  TRACE("headers len: %lu", strbuf_len(sb));
+
+  return sb;
 }
 
-static void send_response(httpreq* req, dumbfile* list) {
-  strbuf* headers = strbuf_init(128);
-  strbuf* content = strbuf_init(256);
+static int send_response(httpreq* req, int sc, strbuf* body) {
+  strbuf* headers = build_headers(sc, strbuf_len(body));
+  int ret = 0;
 
-  build_content(content, list);
-  DEBUG("response body len: %lu", strbuf_len(content));
+  if (httpreq_send(req, strbuf_len(headers), strbuf_data(headers)) == -1) {
+    ret = -1;
+    goto done;
+  }
 
-  build_headers(headers, strbuf_len(content));
-  DEBUG("headers len: %lu", strbuf_len(headers));
+  if (httpreq_send(req, strbuf_len(body), strbuf_data(body)) == -1) {
+    ret = -1;
+    goto done;
+  }
 
-  httpreq_send(req, strbuf_len(headers), strbuf_data(headers));
-  httpreq_send(req, strbuf_len(content), strbuf_data(content));
+done:
+  strbuf_destroy(headers);
+  strbuf_destroy(body);
+  return ret;
+}
+
+static int handle_listing_req(httpreq* req, char* datadir) {
+  dumbfile* file = dumbfile_list(datadir);
+  int ret = send_response(req, 200, build_listing(file));
+
+  dumbfile_destroy(file);
+  return ret;
 }
 
 /* we only support GETs :D */
 int handle_client_req(int fd, char* datadir) {
   httpreq* req = httpreq_init(fd);
+  int ret = 0;
 
   if (!req) {
     return -1;
@@ -70,17 +96,10 @@ int handle_client_req(int fd, char* datadir) {
   }
 #endif
 
-  dumbfile* file = dumbfile_list(datadir);
-
-  if (!file) {
-    ERROR("no files found in datadir %s", datadir);
-    goto done;
+  if (strcasecmp(req->reqline.path, "/") == 0) {
+    ret = handle_listing_req(req, datadir);
   }
 
-  send_response(req, file);
-
-done:
-  dumbfile_destroy(file);
   httpreq_destroy(req);
-  return 0;
+  return ret;
 }
