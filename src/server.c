@@ -109,7 +109,7 @@ void server_main(char* addr, char* port, char* datadir) {
     INFO("request from: %s", client_addr);
 #endif
 
-#ifndef SERVER_NO_FORK
+#if SERVER_FORK == 1
     if (!fork()) {
       // in child process
       close(server_fd);

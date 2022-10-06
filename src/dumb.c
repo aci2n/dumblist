@@ -19,8 +19,8 @@ dumbfile* dumbfile_init(char* path) {
     return 0;
   }
 
-  dumbfile* d = malloc(sizeof *d);
   size_t buflen = 128;
+  dumbfile* d = calloc(1, sizeof *d);
   char* buf = malloc(buflen);
   dumbfile_entry** entry = &d->entry;
 
@@ -64,7 +64,7 @@ void dumbfile_destroy(dumbfile* df) {
       free(entry);
       entry = next;
     }
-    dumbfile* next = df->next;
+    dumbfile* next = curr->next;
     free(curr);
     curr = next;
   }

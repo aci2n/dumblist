@@ -1,7 +1,7 @@
 CC = gcc
 CFLAGS += -g -Og -Wall
 OUT = out
-LOG_LEVEL = LEVEL_DEBUG
+LOG_LEVEL = LEVEL_TRACE
 
 headers = \
 	src/log.h \
@@ -20,7 +20,8 @@ sources = \
 	src/str.c
 
 defines = \
-	-DLOG_LEVEL='$(LOG_LEVEL)'
+	-DLOG_LEVEL='$(LOG_LEVEL)' \
+	-DSERVER_FORK=0
 
 .PHONY: build
 build: $(sources) $(headers)
