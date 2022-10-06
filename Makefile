@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -g -Og -Wall -j6
+CFLAGS = -g -Og -Wall
 OUT = out
-LOG_LEVEL = LEVEL_TRACE
+LOG_LEVEL = LEVEL_DEBUG
 
 headers = \
 	src/log.h \

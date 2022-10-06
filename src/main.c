@@ -12,7 +12,7 @@
 
 int main(int argc, char* argv[const static argc - 1]) {
   char* addr = 0;
-  char* port = "80";
+  char* port = "8080";
   char* datadir = DEFAULT_DATA_DIR;
   int opt = 0;
 
