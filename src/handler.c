@@ -95,9 +95,9 @@ int handle_client_req(int fd, char* datadir) {
   }
 
   INFO("HTTP request: [%s,%s,%s]", req->reqline.version, req->reqline.method, req->reqline.path);
-#if LOG_LEVEL >= DEBUG
+#if LOG_LEVEL >= LEVEL_TRACE
   for (httpheader* header = req->header; header; header = header->next) {
-    DEBUG("%s=%s", header->key, header->val);
+    TRACE("%s=%s", header->key, header->val);
   }
 #endif
 

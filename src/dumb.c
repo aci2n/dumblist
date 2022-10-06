@@ -47,6 +47,8 @@ dumbfile* dumbfile_init(char* path) {
   }
 
   free(buf);
+  fclose(fd);
+
   return d;
 }
 
