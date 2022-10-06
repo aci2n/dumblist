@@ -28,10 +28,17 @@ void strbuf_grow(strbuf* sb, size_t n);
 #define strbuf_printf(SB, FORMAT, ...) \
   do { \
     size_t n = snprintf(0, 0, "" FORMAT "", __VA_ARGS__); \
-    TRACE("strbuf printf: [format=%s,n=%lu]", "" FORMAT "", n); \
+    TRACE("strbuf printf: [format=%s,n=%lu,args:%s]", #FORMAT, n, #__VA_ARGS__); \
     strbuf_grow(SB, n + 1); \
     snprintf(SB->data + SB->len, n + 1, "" FORMAT "", __VA_ARGS__); \
     SB->len += n; \
+  } while (false)
+
+#define stralloc(S, FORMAT, ...) \
+  do { \
+    size_t n = snprintf(0, 0, "" FORMAT "", __VA_ARGS__); \
+    *S = malloc(n + 1); \
+    snprintf(*S, n + 1, "" FORMAT "", __VA_ARGS__); \
   } while (false)
 
 #endif

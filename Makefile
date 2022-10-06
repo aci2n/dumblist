@@ -1,7 +1,7 @@
 CC = gcc
-CFLAGS = -ggdb -Og -Wall
+CFLAGS = -g -Og -Wall
 OUT = out/dumblist
-LOG_LEVEL = 1000
+LOG_LEVEL = LEVEL_TRACE
 
 headers = \
 	src/log.h \

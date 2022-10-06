@@ -7,17 +7,17 @@
 #include "str.h"
 
 char* strtrim(char str[static 1]) {
-  size_t len = strlen(str);
   size_t start = 0;
-  size_t end = len;
+  size_t end = strlen(str);
 
-  for (; start < len && isspace(str[start]); start++);
+  for (; start < end && isspace(str[start]); start++);
   for (; end > 0 && isspace(str[end-1]); end--);
 
   size_t n = end - start + 1;
   char* copy = malloc(n);
 
   strncpy(copy, str + start, n);
+  copy[n-1] = 0;
 
   return copy;
 }

@@ -93,14 +93,15 @@ dumbfile* dumbfile_list(char* path) {
       break;
     }
 
-    TRACE("found file: %s", de->d_name);
-
     if (strendswith(de->d_name, DUMBFILE_EXTENSION)) {
-      char fullpath[PATH_MAX];
+      TRACE("found dumbfile: %s", de->d_name);
+
+      char* fullpath = 0;
       dumbfile* f = 0;
 
-      snprintf(fullpath, sizeof fullpath, "%s/%s", path, de->d_name);
+      stralloc(&fullpath, "%s/%s", path, de->d_name);
       f = dumbfile_init(fullpath);
+      free(fullpath);
 
       if (f) {
         *next = f;

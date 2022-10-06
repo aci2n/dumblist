@@ -19,18 +19,20 @@
 
 static strbuf* build_listing(dumbfile* list) {
   strbuf* sb = strbuf_init(512);
-  size_t count = 0;
 
-  strbuf_add(sb, "<!DOCTYPE HTML><html><head></head><body><h1>Listing</h1><main>");
+  strbuf_add(sb, "<!DOCTYPE HTML><html><head></head><body><header><h1>Listing</h1></header><main>");
   for (dumbfile* df = list; df; df = df->next) {
     strbuf_add(sb, "<article>");
-    strbuf_printf(sb, "<h3>%lu</h3>", count);
-    strbuf_add(sb, "<dl>");
     for (dumbfile_entry *e = df->entry; e; e = e->next) {
-      strbuf_printf(sb, "<dt>%s</dt>", e->key);
-      strbuf_printf(sb, "<dd>%s</dd>", e->val);
+      if (strcasecmp(e->key, "title")) {
+        strbuf_printf(sb, "<h3>%s</h3>", e->val);
+      } else if (strcasecmp(e->key, "image")) {
+        strbuf_printf(sb, "<img src=\"%s\">", e->val);
+      } else {
+        strbuf_printf(sb, "<dl><dt>%s</dt><dd>%s</dd></dl>", e->key, e->val);
+      }
     }
-    strbuf_add(sb, "</dl></article>");
+    strbuf_add(sb, "</article>");
   }
   strbuf_add(sb, "</main></body></html>");
 
@@ -47,13 +49,13 @@ static strbuf* build_headers(unsigned sc, size_t content_len) {
   strbuf_printf(sb, "content-length: %lu" HTTP_NEWLINE, content_len);
   strbuf_add(sb, HTTP_NEWLINE);
 
-  TRACE("headers len: %lu", strbuf_len(sb));
+  TRACE("response headers: %s", strbuf_data(sb));
 
   return sb;
 }
 
 static int send_response(httpreq* req, int sc, strbuf* body) {
-  strbuf* headers = build_headers(sc, strbuf_len(body));
+  strbuf* headers = build_headers(sc, body ? strbuf_len(body) : 0);
   int ret = 0;
 
   if (httpreq_send(req, strbuf_len(headers), strbuf_data(headers)) == -1) {
@@ -61,14 +63,14 @@ static int send_response(httpreq* req, int sc, strbuf* body) {
     goto done;
   }
 
-  if (httpreq_send(req, strbuf_len(body), strbuf_data(body)) == -1) {
+  if (body && httpreq_send(req, strbuf_len(body), strbuf_data(body)) == -1) {
     ret = -1;
     goto done;
   }
 
 done:
   strbuf_destroy(headers);
-  strbuf_destroy(body);
+  if (body) strbuf_destroy(body);
   return ret;
 }
 
@@ -98,6 +100,8 @@ int handle_client_req(int fd, char* datadir) {
 
   if (strcasecmp(req->reqline.path, "/") == 0) {
     ret = handle_listing_req(req, datadir);
+  } else {
+    ret = send_response(req, 404, 0);
   }
 
   httpreq_destroy(req);
