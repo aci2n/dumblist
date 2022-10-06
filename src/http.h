@@ -2,6 +2,9 @@
 #define HTTP_H 1
 
 #include <stdlib.h>
+#include <sys/sendfile.h>
+
+#include "str.h"
 
 typedef struct httpheader httpheader;
 struct httpheader {
@@ -24,8 +27,28 @@ struct httpreq {
   httpheader* header;
 };
 
-httpreq* httpreq_init(int fd);
+typedef enum http_content_type http_content_type;
+enum http_content_type {
+  CT_ASCII,
+  CT_JPG,
+  http_content_type_count,
+};
+
+typedef struct httpresp httpresp;
+struct httpresp {
+  int fd;
+  unsigned sc;
+  http_content_type content_type;
+  size_t content_length;
+  strbuf* body;
+  FILE* file;
+};
+
+httpreq* httpreq_create(int fd);
 void httpreq_destroy(httpreq* req);
-int httpreq_send(httpreq* req, size_t n, char data[static n]);
+
+httpresp* httpresp_create(int fd);
+int httpresp_send(httpresp* resp);
+void httpresp_destroy(httpresp* resp);
 
 #endif

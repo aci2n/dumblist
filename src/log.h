@@ -44,4 +44,6 @@
 #define DEBUG(...) LOG(LEVEL_DEBUG, "DEBUG", __VA_ARGS__);
 #define TRACE(...) LOG(LEVEL_TRACE, "TRACE", __VA_ARGS__);
 
+#define STRERROR (strerror(errno))
+
 #endif
