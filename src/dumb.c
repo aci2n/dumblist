@@ -11,8 +11,6 @@
 #include "log.h"
 #include "str.h"
 
-#define DEFAULT_TITLE "[UNTITLED]"
-
 dumbfile* dumbfile_init(char* path) {
   FILE* fd = fopen(path, "r");
 
@@ -25,38 +23,28 @@ dumbfile* dumbfile_init(char* path) {
   size_t buflen = 128;
   char* buf = malloc(buflen);
   dumbfile_entry** entry = &d->entry;
-  char* title = 0;
 
   for (size_t n; (n = getline(&buf, &buflen, fd)) != -1;) {
-    char* key = strtrim(strtok(buf, "="));
-    char* val = strtrim(strtok(0, "\0"));
+    TRACE("reading dumbfile line: %s", buf);
+
+    char* key = strtok(buf, "=");
+    char* val = strtok(0, "\0");
 
     if (key && val) {
-      if (strcasecmp(key, "title") == 0) {
-        title = strdup(val);
-        TRACE("dumbfile title: [%s=%s]", key, val);
-      } else {
-        dumbfile_entry* e = malloc(sizeof *e);
+      dumbfile_entry* e = malloc(sizeof *e);
 
-        *e = (dumbfile_entry) { 
-          .key = strdup(key),
-          .val = strdup(val),
-        };
-        *entry = e;
-        entry = &e->next;
+      *e = (dumbfile_entry) { 
+        .key = strtrim(key),
+        .val = strtrim(val),
+      };
+      *entry = e;
+      entry = &e->next;
 
-        TRACE("dumbfile entry: [%s=%s]", e->key, e->val);
-      }
+      TRACE("dumbfile entry: [%s=%s]", e->key, e->val);
     } else {
       WARN("invalid line");
     }
   }
-
-  if (!title) {
-    title = malloc(sizeof(DEFAULT_TITLE));
-  }
-
-  d->title = title;
 
   free(buf);
   return d;
@@ -75,7 +63,6 @@ void dumbfile_destroy(dumbfile* df) {
       entry = next;
     }
     dumbfile* next = df->next;
-    free(curr->title);
     free(curr);
     curr = next;
   }

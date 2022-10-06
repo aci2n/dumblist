@@ -63,9 +63,9 @@ httpreq* httpreq_init(int fd) {
             goto error;
           }
 
-          req->reqline.method = strdup(strtrim(method));
-          req->reqline.path = strdup(strtrim(path));
-          req->reqline.version = strdup(strtrim(version));
+          req->reqline.method = strtrim(method);
+          req->reqline.path = strtrim(path);
+          req->reqline.version = strtrim(version);
 
           reqline_done = true;
         } else {
@@ -79,8 +79,8 @@ httpreq* httpreq_init(int fd) {
 
           *header = malloc(sizeof **header);
           *(*header) = (httpheader) {
-            .key = strdup(strtrim(key)),
-              .val = strdup(strtrim(val)),
+            .key = strtrim(key),
+            .val = strtrim(val),
           };
           header = &(*header)->next;
         }
@@ -136,11 +136,11 @@ void httpreq_destroy(httpreq* req) {
   free(req);
 }
 
-int httpreq_send(httpreq* req, char* data) {
-  size_t n = strlen(data);
-
+int httpreq_send(httpreq* req, size_t n, char data[static n]) {
   while (n > 0) {
     size_t sent = send(req->fd, data, n, 0);
+
+    TRACE("sent %lu bytes", sent);
 
     if (sent == -1) {
       ERROR("send: %s", strerror(errno));

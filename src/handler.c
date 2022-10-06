@@ -13,46 +13,46 @@
 #include "http.h"
 #include "log.h"
 #include "dumb.h"
+#include "str.h"
 
-// TODO: how the fuck do i get the content-length here
-#define HTML_LIST_HEAD \
-  "HTTP/1.1 200\r\n\r\n" \
-  "<!DOCTYPE HTML>" \
-  "<html>" \
-  "<head>" \
-  "</head>" \
-  "<body>" \
-    "<main>" \
-      "<h1>Listing</h1>" \
-      "<dl>" 
-#define HTML_LIST_TAIL \
-      "</dl>" \
-    "</main>" \
-  "</body>" \
-  "</html>\r\n\r\n"
+static void build_content(strbuf* sb, dumbfile* list) {
+  size_t count = 0;
+
+  strbuf_add(sb, "<!DOCTYPE HTML><html><head></head><body><h1>Listing</h1><main>");
+  for (dumbfile* df = list; df; df = df->next) {
+    strbuf_add(sb, "<article>");
+    strbuf_printf(sb, "<h3>%lu</h3>", count);
+    strbuf_add(sb, "<dl>");
+    for (dumbfile_entry *e = df->entry; e; e = e->next) {
+      strbuf_printf(sb, "<dt>%s</dt>", e->key);
+      strbuf_printf(sb, "<dd>%s</dd>", e->val);
+    }
+    strbuf_add(sb, "</dl></article>");
+  }
+  strbuf_add(sb, "</main></body></html>");
+}
+
+#define HTTP_NEWLINE "\r\n"
+
+static void build_headers(strbuf* sb, size_t content_len) {
+  strbuf_add(sb, "HTTP/1.1 200 OK" HTTP_NEWLINE);
+  strbuf_add(sb, "content-type: text/html; charset=us-acsii" HTTP_NEWLINE);
+  strbuf_printf(sb, "content-length: %lu" HTTP_NEWLINE, content_len);
+  strbuf_add(sb, HTTP_NEWLINE);
+}
 
 static void send_response(httpreq* req, dumbfile* list) {
-  httpreq_send(req, HTML_LIST_HEAD);
-  
-  for (dumbfile* df = list; df; df = df->next) {
-    httpreq_send(req, "<dt>");
-    httpreq_send(req, "Title");
-    httpreq_send(req, "<dt>");
-    httpreq_send(req, "<dd>");
-    httpreq_send(req, df->title);
-    httpreq_send(req, "</dd>");
+  strbuf* headers = strbuf_init(128);
+  strbuf* content = strbuf_init(256);
 
-    for (dumbfile_entry* entry = df->entry; entry; entry = entry->next) {
-      httpreq_send(req, "<dt>");
-      httpreq_send(req, entry->key);
-      httpreq_send(req, "</dt>");
-      httpreq_send(req, "<dd>");
-      httpreq_send(req, entry->val);
-      httpreq_send(req, "</dd>");
-    }
-  }
+  build_content(content, list);
+  DEBUG("response body len: %lu", strbuf_len(content));
 
-  httpreq_send(req, HTML_LIST_TAIL);
+  build_headers(headers, strbuf_len(content));
+  DEBUG("headers len: %lu", strbuf_len(headers));
+
+  httpreq_send(req, strbuf_len(headers), strbuf_data(headers));
+  httpreq_send(req, strbuf_len(content), strbuf_data(content));
 }
 
 /* we only support GETs :D */

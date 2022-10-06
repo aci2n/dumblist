@@ -26,6 +26,6 @@ struct httpreq {
 
 httpreq* httpreq_init(int fd);
 void httpreq_destroy(httpreq* req);
-int httpreq_send(httpreq* req, char* data);
+int httpreq_send(httpreq* req, size_t n, char data[static n]);
 
 #endif
