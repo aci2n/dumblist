@@ -14,7 +14,15 @@
 static strbuf* build_listing(dumbfile* list) {
   strbuf* sb = strbuf_init(512);
 
-  strbuf_add(sb, "<!DOCTYPE HTML><html><head></head><body><header><h1>Listing</h1></header><main>");
+  strbuf_add(sb, 
+      "<!DOCTYPE HTML><html><head><style>"
+      "img {width: 50rem; max-width: 80vw}"
+      "dt,dd {display: inline-block}"
+      "dt {font-weight: bold}"
+      "dt:after {content: ':'}"
+      "dd {margin: 0; text-indent: 0.5rem}"
+      "</style></head><body><header><h1>Listing</h1></header><main>");
+
   for (dumbfile* df = list; df; df = df->next) {
     strbuf_add(sb, "<article>");
     for (dumbfile_entry *e = df->entry; e; e = e->next) {
@@ -28,6 +36,7 @@ static strbuf* build_listing(dumbfile* list) {
     }
     strbuf_add(sb, "</article>");
   }
+
   strbuf_add(sb, "</main></body></html>");
 
   TRACE("listing len: %lu", strbuf_len(sb));

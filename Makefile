@@ -1,5 +1,5 @@
 CC = gcc
-CFLAGS = -g -Og -Wall
+CFLAGS = -g -Og -Wall -j6
 OUT = out
 LOG_LEVEL = LEVEL_TRACE
 
