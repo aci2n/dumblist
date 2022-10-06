@@ -1,6 +1,6 @@
 CC = gcc
 CFLAGS = -g -Og -Wall
-OUT = out/dumblist
+OUT = out
 LOG_LEVEL = LEVEL_TRACE
 
 headers = \
@@ -24,4 +24,5 @@ defines = \
 
 .PHONY: build
 build: $(sources) $(headers)
-	$(CC) $(CFLAGS) $(defines) $(sources) $(headers) -o'$(OUT)'
+	@mkdir -p '$(OUT)'
+	$(CC) $(CFLAGS) $(defines) $(sources) $(headers) -o'$(OUT)/dumblist'

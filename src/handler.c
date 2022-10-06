@@ -58,32 +58,17 @@ static int handle_listing_req(httpreq* req, httpresp* resp, char* datadir) {
 }
 
 static int handle_static_file_req(httpreq* req, httpresp* resp, char* datadir) {
-  char* path = 0;
   int ret = 0;
 
   // TODO: unsafe, could pass ../ to escape datadir
-  stralloc(&path, "%s%s", datadir, req->reqline.path);
-  resp->file = fopen(path, "r");
-
-  if (!resp->file) {
-    WARN("file %s not found: %s", path, STRERROR);
-    resp->sc = 404;
-    goto done;
-  }
-
-  if (strendswith(path, ".jpg") || strendswith(path, ".jpeg")) {
-    resp->content_type = CT_JPG;
-  }
+  stralloc(&resp->file_path, "%s%s", datadir, req->reqline.path);
 
   if (httpresp_send(resp) == -1) {
-    resp->sc = 500;
     ret = -1;
-    ERROR("sending file %s: %s", path, STRERROR);
+    ERROR("sending file %s: %s", resp->file_path, STRERROR);
   }
 
-done:
-  if (path) free(path);
-  if (resp->file) fclose(resp->file);
+  free(resp->file_path);
 
   return ret;
 }

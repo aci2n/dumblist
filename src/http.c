@@ -161,9 +161,8 @@ static int send_buf(httpresp* resp, strbuf* buf) {
   return 0;
 }
 
-static int send_file(httpresp* resp) {
+static int send_file(httpresp* resp, int const fd) {
   size_t const len = resp->content_length;
-  int const fd = fileno(resp->file);
   size_t sent = 0;
 
   assert(fd != -1);
@@ -216,29 +215,49 @@ static strbuf* build_headers(httpresp* resp) {
   return sb;
 }
 
+static int setup_file_response(httpresp* resp) {
+  char* const path = resp->file_path;
+  int fd = open(path, O_RDONLY);
+
+  if (fd == -1) {
+    int err = errno;
+    if (err == ENOENT) {
+      WARN("file %s not found: %s", path, STRERROR);
+      resp->sc = 404;
+    } else {
+      WARN("could not open file %s: %s", path, STRERROR);
+      resp->sc = 500;
+    }
+    return -err;
+  }
+
+  struct stat st;
+  if (fstat(fd, &st) == -1) {
+    int err = errno;
+    ERROR("fstat: %s", STRERROR);
+    resp->sc = 500;
+    close(fd);
+    return -err;
+  }
+
+  resp->content_length = st.st_size;
+
+  if (strendswith(path, ".jpg") || strendswith(path, ".jpeg")) {
+    resp->content_type = CT_JPG;
+  }
+
+  return fd;
+}
+
 int httpresp_send(httpresp* resp) {
   strbuf* headers = 0;
   int ret = 0;
+  int file_fd = 0;
 
   if (resp->body) {
     resp->content_length = strbuf_len(resp->body);
-  } else if (resp->file) {
-    struct stat st;
-    int file_fd = 0;
-
-    if ((file_fd = fileno(resp->file)) == -1) {
-      ERROR("fileno: %s", STRERROR);
-      ret = -1;
-      goto done;
-    }
-
-    if (fstat(file_fd, &st) == -1) {
-      ERROR("fstat: %s", STRERROR);
-      ret = -1;
-      goto done;
-    }
-
-    resp->content_length = st.st_size;
+  } else if (resp->file_path) {
+    file_fd = setup_file_response(resp);
   } else {
     resp->content_length = 0;
   }
@@ -255,8 +274,15 @@ int httpresp_send(httpresp* resp) {
       ret = -1;
       goto done;
     }
-  } else if (resp->file) {
-    if (send_file(resp) == -1) {
+  } else if (resp->file_path) {
+    if (file_fd < 0) {
+      if (file_fd != -ENOENT) {
+        ret = -1;
+      }
+      goto done;
+    }
+    
+    if (send_file(resp, file_fd) == -1) {
       ret = -1;
       goto done;
     }
@@ -264,6 +290,8 @@ int httpresp_send(httpresp* resp) {
 
 done:
   strbuf_destroy(headers);
+  if (file_fd > 0) close(file_fd);
+
   return ret;
 }
 

@@ -41,7 +41,7 @@ struct httpresp {
   http_content_type content_type;
   size_t content_length;
   strbuf* body;
-  FILE* file;
+  char* file_path;
 };
 
 httpreq* httpreq_create(int fd);
