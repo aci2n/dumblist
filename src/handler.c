@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <stdbool.h>
 #include <errno.h>
+#include <libgen.h>
 
 #include "handler.h"
 #include "http.h"
@@ -67,10 +68,11 @@ static int handle_listing_req(httpreq* req, httpresp* resp, char* datadir) {
 }
 
 static int handle_static_file_req(httpreq* req, httpresp* resp, char* datadir) {
+  // ensure no /../.. fuckery
+  char* filename = basename(req->reqline.path);
   int ret = 0;
 
-  // TODO: unsafe, could pass ../ to escape datadir
-  stralloc(&resp->file_path, "%s%s", datadir, req->reqline.path);
+  stralloc(&resp->file_path, "%s/%s", datadir, filename);
 
   if (httpresp_send(resp) == -1) {
     ret = -1;
