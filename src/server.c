@@ -9,6 +9,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
+#include "server.h"
 #include "log.h"
 #include "handler.h"
 
@@ -84,8 +85,8 @@ static int get_server_fd(char* addr, char* port) {
   return fd;
 }
 
-void server_main(char* addr, char* port, char* datadir) {
-  int server_fd = get_server_fd(addr, port);
+void server_main(server_args* args) {
+  int server_fd = get_server_fd(args->addr, args->port);
 
   if (server_fd == -1) {
     ERROR("could not bind to address");
@@ -113,13 +114,13 @@ void server_main(char* addr, char* port, char* datadir) {
     if (!fork()) {
       // in child process
       close(server_fd);
-      handle_client_req(client_fd, datadir);
+      handle_client_req(client_fd, args->datadir);
       close(client_fd);
       exit(0);
     }
     close(client_fd);
 #else
-    handle_client_req(client_fd, datadir);
+    handle_client_req(client_fd, args->datadir);
     close(client_fd);
 #endif
   } 
