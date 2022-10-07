@@ -34,8 +34,8 @@ enum http_content_type {
   http_content_type_count,
 };
 
-typedef struct httpresp httpresp;
-struct httpresp {
+typedef struct httpres httpres;
+struct httpres {
   int fd;
   unsigned sc;
   http_content_type content_type;
@@ -47,8 +47,8 @@ struct httpresp {
 httpreq* httpreq_create(int fd);
 void httpreq_destroy(httpreq* req);
 
-httpresp* httpresp_create(int fd);
-int httpresp_send(httpresp* resp);
-void httpresp_destroy(httpresp* resp);
+httpres* httpres_create(int fd);
+int httpres_send(httpres* res);
+void httpres_destroy(httpres* res);
 
 #endif

@@ -45,41 +45,41 @@ static strbuf* build_listing(dumbfile* list) {
   return sb;
 }
 
-static int handle_listing_req(httpreq* req, httpresp* resp, char* datadir) {
+static int handle_listing_req(httpreq* req, httpres* res, char* datadir) {
   dumbfile* file = dumbfile_list(datadir);
   int ret = 0;
 
   if (!file) {
     WARN("no dumbfiles in %s", datadir);
-    resp->sc = 404;
+    res->sc = 404;
   } else {
-    resp->body = build_listing(file);
+    res->body = build_listing(file);
   }
 
-  if (httpresp_send(resp) == -1) {
+  if (httpres_send(res) == -1) {
     ERROR("sending listing: %s", STRERROR);
     ret = -1;
   }
 
   if (file) dumbfile_destroy(file);
-  if (resp->body) strbuf_destroy(resp->body);
+  if (res->body) strbuf_destroy(res->body);
 
   return ret;
 }
 
-static int handle_static_file_req(httpreq* req, httpresp* resp, char* datadir) {
+static int handle_static_file_req(httpreq* req, httpres* res, char* datadir) {
   // ensure no /../.. fuckery
   char* filename = basename(req->reqline.path);
   int ret = 0;
 
-  stralloc(&resp->file_path, "%s/%s", datadir, filename);
+  stralloc(&res->file_path, "%s/%s", datadir, filename);
 
-  if (httpresp_send(resp) == -1) {
+  if (httpres_send(res) == -1) {
     ret = -1;
-    ERROR("sending file %s: %s", resp->file_path, STRERROR);
+    ERROR("sending file %s: %s", res->file_path, STRERROR);
   }
 
-  free(resp->file_path);
+  free(res->file_path);
 
   return ret;
 }
@@ -87,7 +87,7 @@ static int handle_static_file_req(httpreq* req, httpresp* resp, char* datadir) {
 /* we only support GETs :D */
 int handle_client_req(int fd, char* datadir) {
   httpreq* req = httpreq_create(fd);
-  httpresp* resp = httpresp_create(fd);
+  httpres* res = httpres_create(fd);
   int ret = 0;
 
   if (!req) {
@@ -104,14 +104,14 @@ int handle_client_req(int fd, char* datadir) {
 #endif
 
   if (strcasecmp(req->reqline.path, "/") == 0) {
-    ret = handle_listing_req(req, resp, datadir);
+    ret = handle_listing_req(req, res, datadir);
   } else {
-    ret = handle_static_file_req(req, resp, datadir);
+    ret = handle_static_file_req(req, res, datadir);
   }
 
 done:
   httpreq_destroy(req);
-  httpresp_destroy(resp);
+  httpres_destroy(res);
 
   return ret;
 }
